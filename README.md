@@ -1,8 +1,8 @@
 # OptiMod
 
-OptiMod is a planned resource-aware inference advisor for `llama.cpp` and GGUF models running on constrained computers.
+OptiMod is a resource-aware inference advisor for `llama.cpp` and GGUF models running on constrained computers.
 
-> Status: architecture scaffold. Commands and data contracts exist, but hardware inspection, GGUF parsing, benchmarking, and recommendations are not implemented yet.
+> Status: early implementation. Read-only Linux host inspection works. GGUF parsing, recommendations, and benchmarking remain under development.
 
 ## Goal
 
@@ -33,19 +33,29 @@ Initial manual test target: Qwen 28B GGUF inference through `llama.cpp`. Design 
 - Claiming exact quality from a quantization label
 - Sending hardware or model information to a remote service
 
-## Planned CLI
+## CLI
 
 ```text
-optimod inspect
+optimod inspect [--path <PATH>] [--json]       available
 optimod model inspect <MODEL.gguf>
 optimod recommend <MODEL.gguf> --profile balanced
 optimod benchmark <MODEL.gguf> --runs 3
 optimod report --json
 ```
 
-Current commands intentionally exit with a clear `not implemented` error.
+Unfinished commands exit with a clear `not implemented` error. They never emit fabricated recommendations or benchmark results.
 
-## Build the scaffold
+Linux inspection reads kernel and system interfaces without changing host state:
+
+```bash
+cargo run -- inspect
+cargo run -- inspect --json
+cargo run -- inspect --path /path/to/models
+```
+
+It reports visible CPU topology and inference features, host and cgroup-aware memory, swap, known GPU vendors exposed through DRM, and filesystem capacity for selected path. Unknown display-only DRM devices are not presented as inference accelerators.
+
+## Build
 
 Requirements:
 
@@ -74,7 +84,7 @@ cargo build --release --locked
 ```text
 src/
 ├── benchmark/       repeatable benchmark result contract
-├── hardware/        host resource snapshots
+├── hardware/        Linux host inspection and resource snapshots
 ├── llama_cpp/       installed runtime and capability detection
 ├── metrics/         latency, throughput, memory, and I/O measurements
 ├── model/           GGUF metadata contract

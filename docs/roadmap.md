@@ -6,16 +6,16 @@
 - [x] Define serializable domain contracts
 - [x] Add architecture and safety boundaries
 - [x] Add formatting, lint, test, build, and MSRV checks
-- [ ] Implement runtime behavior
+- [x] Implement first runtime behavior
 
 ## Phase 1 — Read-only inspection
 
-- [ ] Linux CPU topology and instruction features
-- [ ] RAM and swap snapshot
-- [ ] Accelerator discovery without hard dependency on vendor SDKs
-- [ ] Storage characteristics for the selected model path
+- [x] Linux CPU topology and instruction features
+- [x] Host, cgroup-aware RAM, and swap snapshot
+- [x] Known accelerator-vendor discovery without vendor SDKs
+- [x] Storage characteristics for a selected path
 - [ ] Installed `llama.cpp` executable, version, and supported-option discovery
-- [ ] Versioned JSON host report
+- [x] Versioned JSON host report
 
 ## Phase 2 — GGUF and feasibility
 

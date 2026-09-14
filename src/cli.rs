@@ -2,12 +2,14 @@ use std::{fmt, path::PathBuf};
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
+use crate::hardware;
+
 #[derive(Debug, Parser)]
 #[command(
     name = "optimod",
     version,
     about = "Resource-aware llama.cpp inference advisor",
-    long_about = "Inspect constrained hardware, evaluate GGUF models, and recommend measured llama.cpp configurations. Runtime behavior is not implemented in this scaffold release."
+    long_about = "Inspect constrained Linux hardware, evaluate GGUF models, and recommend measured llama.cpp configurations. Model inspection, recommendations, and benchmarking remain under development."
 )]
 pub struct Cli {
     #[command(subcommand)]
@@ -17,7 +19,7 @@ pub struct Cli {
 #[derive(Debug, Subcommand)]
 enum Command {
     /// Inspect CPU, memory, accelerators, and model storage.
-    Inspect,
+    Inspect(InspectArgs),
     /// Inspect model metadata.
     Model(ModelArgs),
     /// Rank candidate inference configurations.
@@ -26,6 +28,16 @@ enum Command {
     Benchmark(BenchmarkArgs),
     /// Render the latest optimization report.
     Report(ReportArgs),
+}
+
+#[derive(Debug, Args)]
+struct InspectArgs {
+    /// Path whose backing storage should be inspected.
+    #[arg(long, default_value = ".")]
+    path: PathBuf,
+    /// Emit versioned machine-readable JSON.
+    #[arg(long)]
+    json: bool,
 }
 
 #[derive(Debug, Args)]
@@ -85,35 +97,64 @@ struct ReportArgs {
     json: bool,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub enum CliError {
     NotImplemented(&'static str),
+    Inspection(hardware::InspectionError),
+    Serialization(serde_json::Error),
 }
 
 impl fmt::Display for CliError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::NotImplemented(command) => write!(
-                formatter,
-                "{command} is not implemented in the scaffold release"
-            ),
+            Self::NotImplemented(command) => write!(formatter, "{command} is not implemented yet"),
+            Self::Inspection(source) => write!(formatter, "hardware inspection failed: {source}"),
+            Self::Serialization(source) => {
+                write!(formatter, "could not serialize report: {source}")
+            }
         }
     }
 }
 
-impl std::error::Error for CliError {}
+impl std::error::Error for CliError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Inspection(source) => Some(source),
+            Self::Serialization(source) => Some(source),
+            Self::NotImplemented(_) => None,
+        }
+    }
+}
+
+impl From<hardware::InspectionError> for CliError {
+    fn from(source: hardware::InspectionError) -> Self {
+        Self::Inspection(source)
+    }
+}
+
+impl From<serde_json::Error> for CliError {
+    fn from(source: serde_json::Error) -> Self {
+        Self::Serialization(source)
+    }
+}
 
 pub fn run() -> Result<(), CliError> {
     let cli = Cli::parse();
-    let command = match cli.command {
-        Command::Inspect => "inspect",
+    match cli.command {
+        Command::Inspect(arguments) => {
+            let report = hardware::inspect(&arguments.path)?;
+            if arguments.json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                print!("{}", hardware::render_human(&report));
+            }
+            Ok(())
+        }
         Command::Model(ModelArgs {
             command: ModelCommand::Inspect { .. },
-        }) => "model inspect",
-        Command::Recommend(_) => "recommend",
-        Command::Benchmark(_) => "benchmark",
-        Command::Report(_) => "report",
-    };
-
-    Err(CliError::NotImplemented(command))
+        }) => Err(CliError::NotImplemented("model inspect")),
+        Command::Recommend(_) => Err(CliError::NotImplemented("recommend")),
+        Command::Benchmark(_) => Err(CliError::NotImplemented("benchmark")),
+        Command::Report(_) => Err(CliError::NotImplemented("report")),
+    }
 }

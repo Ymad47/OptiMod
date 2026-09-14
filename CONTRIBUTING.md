@@ -1,6 +1,6 @@
 # Contributing
 
-OptiMod is currently an architecture scaffold.
+OptiMod has an early read-only Linux inspection implementation.
 
 ## Development loop
 

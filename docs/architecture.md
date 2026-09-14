@@ -19,16 +19,16 @@ Static analysis establishes constraints and estimated candidates. Benchmarks est
 
 ### `hardware`
 
-Produces a read-only `HostSnapshot` containing:
+Produces a read-only, versioned inspection report containing:
 
 - OS and architecture;
 - physical and logical CPU topology;
 - relevant CPU instruction features;
-- RAM and swap totals plus currently available memory;
-- accelerator backends and memory where discoverable;
-- model-storage capacity and rotational status where discoverable.
+- host RAM, effective cgroup-aware memory, and swap;
+- known NVIDIA, AMD, and Intel DRM devices, plus memory where exposed;
+- capacity, filesystem, device, and rotational status for a selected path.
 
-Linux implementation should prefer kernel interfaces and stable system commands. Missing information remains `None`; it must not be invented.
+Linux implementation reads `/proc`, `/sys`, cgroup v2 files, and `statvfs` directly. It does not invoke a shell or mutate host state. Unknown information remains `None`; it is not invented. Generic virtual display devices are excluded from inference accelerators.
 
 ### `model`
 
@@ -89,5 +89,5 @@ Subprocess rules:
 - Unit tests: parsing, arithmetic boundaries, feasibility rules, scoring, command construction
 - Fixture tests: small synthetic GGUF headers, never full model weights
 - Integration tests: fake executables with deterministic stdout/stderr and exit codes
-- Host tests: opt-in because hardware and performance vary
+- Linux CLI host tests: assert stable invariants only, never exact hardware values
 - Benchmarks: repeated, versioned, and never used as universal claims
